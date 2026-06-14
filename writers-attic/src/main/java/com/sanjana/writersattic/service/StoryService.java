@@ -1,0 +1,140 @@
+package com.sanjana.writersattic.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import com.sanjana.writersattic.dto.ApiResponse;
+import com.sanjana.writersattic.dto.StoryRequest;
+import com.sanjana.writersattic.dto.StoryResponse;
+import com.sanjana.writersattic.exception.StoryNotFoundException;
+import com.sanjana.writersattic.model.Story;
+import com.sanjana.writersattic.model.User;
+import com.sanjana.writersattic.repository.LikeRepository;
+import com.sanjana.writersattic.repository.StoryRepository;
+import com.sanjana.writersattic.repository.UserRepository;
+
+@Service
+public class StoryService {
+
+    private final StoryRepository storyRepository;
+    private final LikeRepository likeRepository;
+    private final UserRepository userRepository;
+
+    public StoryService(
+            StoryRepository storyRepository,
+            LikeRepository likeRepository,
+            UserRepository userRepository) {
+
+        this.storyRepository = storyRepository;
+        this.likeRepository = likeRepository;
+        this.userRepository = userRepository;
+    }
+
+    // CREATE STORY
+    public ApiResponse<StoryResponse> createStory(StoryRequest request) {
+
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Story story = Story.builder()
+                .title(request.getTitle())
+                .content(request.getContent())
+                .createdAt(LocalDateTime.now())
+                .author(user)
+                .build();
+
+        Story saved = storyRepository.save(story);
+
+        return ApiResponse.success("Story created", mapToResponse(saved));
+    }
+
+    // GET ALL
+    public ApiResponse<List<StoryResponse>> getAllStories() {
+
+        List<StoryResponse> list = storyRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        return ApiResponse.success("All stories", list);
+    }
+
+    // GET BY ID
+    public ApiResponse<StoryResponse> getStoryById(Long id) {
+
+        Story story = storyRepository.findById(id)
+                .orElseThrow(() -> new StoryNotFoundException("Story not found"));
+
+        return ApiResponse.success("Story found", mapToResponse(story));
+    }
+
+    // UPDATE
+    public ApiResponse<StoryResponse> updateStory(Long id, StoryRequest request) {
+
+        Story story = storyRepository.findById(id)
+                .orElseThrow(() -> new StoryNotFoundException("Story not found"));
+
+        story.setTitle(request.getTitle());
+        story.setContent(request.getContent());
+        story.setUpdatedAt(LocalDateTime.now());
+
+        Story updated = storyRepository.save(story);
+
+        return ApiResponse.success("Story updated", mapToResponse(updated));
+    }
+
+    // DELETE
+    public ApiResponse<String> deleteStory(Long id) {
+
+        Story story = storyRepository.findById(id)
+                .orElseThrow(() -> new StoryNotFoundException("Story not found"));
+
+        storyRepository.delete(story);
+
+        return ApiResponse.success("Story deleted");
+    }
+
+    // MAPPER
+    private StoryResponse mapToResponse(Story story) {
+
+        long likes = likeRepository.countByStory(story);
+
+        User currentUser = null;
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth != null &&
+            auth.isAuthenticated() &&
+            !"anonymousUser".equals(auth.getName())) {
+
+            String email = auth.getName();
+            currentUser = userRepository.findByEmail(email).orElse(null);
+        }
+
+        boolean liked = currentUser != null &&
+                likeRepository.existsByStoryAndUser(story, currentUser);
+
+        return StoryResponse.builder()
+                .id(story.getId())
+                .title(story.getTitle())
+                .content(story.getContent())
+                .status(story.getStatus())
+                .likes(likes)
+                .liked(liked)
+                .createdAt(story.getCreatedAt())
+                .updatedAt(story.getUpdatedAt())
+                .authorName(
+                        story.getAuthor() != null
+                                ? story.getAuthor().getName()
+                                : "Anonymous"
+                )
+                .build();
+    }
+}

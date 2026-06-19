@@ -39,7 +39,7 @@ public class AuthService {
         user.setPassword(
                 passwordEncoder.encode(request.getPassword())
         );
-
+        user.setRole("USER");
         userRepository.save(user);
 
         System.out.println("User saved successfully");

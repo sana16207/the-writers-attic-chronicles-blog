@@ -13,13 +13,13 @@ public class StoryResponse {
     private String title;
     private String content;
     private String status;
-
+    private Long authorId;
     // 🔥 ADD THIS (IMPORTANT)
     private String authorName;
-
     private Long likes;
     private Boolean liked;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
 }

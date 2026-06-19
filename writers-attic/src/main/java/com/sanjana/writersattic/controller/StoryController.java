@@ -1,7 +1,8 @@
 package com.sanjana.writersattic.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import com.sanjana.writersattic.dto.ApiResponse;
@@ -19,22 +20,41 @@ public class StoryController {
         this.storyService = storyService;
     }
 
+    // CREATE
     @PostMapping
     public ApiResponse<StoryResponse> createStory(@RequestBody StoryRequest request) {
         return storyService.createStory(request);
     }
 
+    // GET ALL
     @GetMapping
-    public ApiResponse<List<StoryResponse>> getAllStories() {
-        return storyService.getAllStories();
+    public ApiResponse<Page<StoryResponse>> getAllStories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        return storyService.getAllStories(pageable);
     }
 
-    @GetMapping("/{id}")
+    // SEARCH
+    @GetMapping("/search")
+    public ApiResponse<Page<StoryResponse>> searchStories(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        return storyService.searchStories(keyword, pageable);
+    }
+
+    // GET BY ID (SAFE ROUTING FIX)
+    @GetMapping("/{id:[0-9]+}")
     public ApiResponse<StoryResponse> getStoryById(@PathVariable Long id) {
         return storyService.getStoryById(id);
     }
 
-    @PutMapping("/{id}")
+    // UPDATE
+    @PutMapping("/{id:[0-9]+}")
     public ApiResponse<StoryResponse> updateStory(
             @PathVariable Long id,
             @RequestBody StoryRequest request) {
@@ -42,7 +62,8 @@ public class StoryController {
         return storyService.updateStory(id, request);
     }
 
-    @DeleteMapping("/{id}")
+    // DELETE
+    @DeleteMapping("/{id:[0-9]+}")
     public ApiResponse<String> deleteStory(@PathVariable Long id) {
         return storyService.deleteStory(id);
     }

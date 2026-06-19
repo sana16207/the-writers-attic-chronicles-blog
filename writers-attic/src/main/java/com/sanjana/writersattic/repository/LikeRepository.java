@@ -15,4 +15,5 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
 
     @Transactional
     void deleteByStoryAndUser(Story story, User user);
+    void deleteByStory(Story story);
 }

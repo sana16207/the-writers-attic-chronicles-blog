@@ -52,14 +52,40 @@ function AdminPage() {
     { header: "Role", cell: (u) => <span className="font-type text-[11px] uppercase tracking-widest text-gold">{u.role ?? "USER"}</span> },
   ];
   const storyCols: Column<Story>[] = [
-    { header: "Title", cell: (s) => <span className="font-serif text-coffee">{s.title}</span> },
-    { header: "Author", cell: (s) => s.authorName ?? (typeof s.author === "string" ? s.author : s.author?.name ?? "—") },
-    { header: "Posted", cell: (s) => s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "—" },
-  ];
+  {
+    header: "Title",
+    cell: (s) => (
+      <span className="font-serif text-coffee">
+        {s.title}
+      </span>
+    ),
+  },
+  {
+    header: "Author",
+    cell: (s) => s.authorName ?? "—",
+  },
+  {
+    header: "Posted",
+    cell: (s) =>
+      s.createdAt
+        ? new Date(s.createdAt).toLocaleDateString()
+        : "—",
+  },
+];
   const commentCols: Column<Comment>[] = [
-    { header: "Comment", cell: (c) => <span className="line-clamp-2">{c.content}</span> },
-    { header: "Author", cell: (c) => c.authorName ?? (typeof c.author === "string" ? c.author : c.author?.name ?? "—") },
-  ];
+  {
+    header: "Comment",
+    cell: (c) => (
+      <span className="line-clamp-2">
+        {c.content}
+      </span>
+    ),
+  },
+  {
+    header: "Author",
+    cell: (c) => c.authorName ?? "—",
+  },
+];
 
   if (!users || !stories || !comments) return <PageShell><Loader /></PageShell>;
 

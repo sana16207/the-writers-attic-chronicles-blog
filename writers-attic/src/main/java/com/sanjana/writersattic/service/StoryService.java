@@ -1,10 +1,14 @@
 package com.sanjana.writersattic.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sanjana.writersattic.dto.ApiResponse;
 import com.sanjana.writersattic.dto.StoryRequest;
@@ -33,12 +37,10 @@ public class StoryService {
         this.userRepository = userRepository;
     }
 
-    // CREATE STORY
+    // CREATE
     public ApiResponse<StoryResponse> createStory(StoryRequest request) {
 
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getName();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -46,6 +48,7 @@ public class StoryService {
         Story story = Story.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
+                .status(request.getStatus())
                 .createdAt(LocalDateTime.now())
                 .author(user)
                 .build();
@@ -55,15 +58,39 @@ public class StoryService {
         return ApiResponse.success("Story created", mapToResponse(saved));
     }
 
-    // GET ALL
-    public ApiResponse<List<StoryResponse>> getAllStories() {
+    // GET ALL (LATEST FIRST + PAGINATION)
+    public ApiResponse<Page<StoryResponse>> getAllStories(Pageable pageable) {
 
-        List<StoryResponse> list = storyRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
 
-        return ApiResponse.success("All stories", list);
+        Page<StoryResponse> page = storyRepository.findAll(sortedPageable)
+                .map(this::mapToResponse);
+
+        return ApiResponse.success("All stories", page);
+    }
+
+    // SEARCH
+    public ApiResponse<Page<StoryResponse>> searchStories(String keyword, Pageable pageable) {
+
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<StoryResponse> page = storyRepository
+                .findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+    keyword,
+    keyword,
+    sortedPageable
+)
+                .map(this::mapToResponse);
+
+        return ApiResponse.success("Search results", page);
     }
 
     // GET BY ID
@@ -81,8 +108,23 @@ public class StoryService {
         Story story = storyRepository.findById(id)
                 .orElseThrow(() -> new StoryNotFoundException("Story not found"));
 
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
+
+        boolean isOwner = story.getAuthor() != null &&
+                story.getAuthor().getId().equals(currentUser.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new RuntimeException("Not allowed to edit this story");
+        }
+
         story.setTitle(request.getTitle());
         story.setContent(request.getContent());
+        story.setStatus(request.getStatus());
         story.setUpdatedAt(LocalDateTime.now());
 
         Story updated = storyRepository.save(story);
@@ -91,11 +133,27 @@ public class StoryService {
     }
 
     // DELETE
+    @Transactional
     public ApiResponse<String> deleteStory(Long id) {
 
         Story story = storyRepository.findById(id)
                 .orElseThrow(() -> new StoryNotFoundException("Story not found"));
 
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
+
+        boolean isOwner = story.getAuthor() != null &&
+                story.getAuthor().getId().equals(currentUser.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new RuntimeException("Not allowed to delete this story");
+        }
+
+        likeRepository.deleteByStory(story);
         storyRepository.delete(story);
 
         return ApiResponse.success("Story deleted");
@@ -111,8 +169,8 @@ public class StoryService {
         var auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth != null &&
-            auth.isAuthenticated() &&
-            !"anonymousUser".equals(auth.getName())) {
+                auth.isAuthenticated() &&
+                !"anonymousUser".equals(auth.getName())) {
 
             String email = auth.getName();
             currentUser = userRepository.findByEmail(email).orElse(null);
@@ -130,11 +188,8 @@ public class StoryService {
                 .liked(liked)
                 .createdAt(story.getCreatedAt())
                 .updatedAt(story.getUpdatedAt())
-                .authorName(
-                        story.getAuthor() != null
-                                ? story.getAuthor().getName()
-                                : "Anonymous"
-                )
+                .authorName(story.getAuthor() != null ? story.getAuthor().getName() : "Anonymous")
+                .authorId(story.getAuthor() != null ? story.getAuthor().getId() : null)
                 .build();
     }
 }

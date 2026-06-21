@@ -3,6 +3,7 @@ package com.sanjana.writersattic.service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.sanjana.writersattic.dto.AuthResponse;
 import com.sanjana.writersattic.dto.LoginRequest;
 import com.sanjana.writersattic.dto.RegisterRequest;
 import com.sanjana.writersattic.model.User;
@@ -48,38 +49,29 @@ public class AuthService {
         return "User registered successfully";
     }
 
-    public String login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request) {
 
-        System.out.println("========== LOGIN START ==========");
-        System.out.println("STEP 1 : Request Received");
-        System.out.println("Email = " + request.getEmail());
+    User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    boolean passwordMatches =
+            passwordEncoder.matches(
+                    request.getPassword(),
+                    user.getPassword());
 
-        System.out.println("STEP 2 : User Found");
-        System.out.println("DB Email = " + user.getEmail());
-
-        boolean passwordMatches =
-                passwordEncoder.matches(
-                        request.getPassword(),
-                        user.getPassword());
-
-        System.out.println("STEP 3 : Password Match = " + passwordMatches);
-
-        if (!passwordMatches) {
-            throw new RuntimeException("Invalid password");
-        }
-
-        System.out.println("STEP 4 : Generating JWT");
-
-        String token = jwtService.generateToken(user.getEmail());
-
-        System.out.println("STEP 5 : JWT Generated");
-        System.out.println(token);
-
-        System.out.println("========== LOGIN END ==========");
-
-        return token;
+    if (!passwordMatches) {
+        throw new RuntimeException("Invalid password");
     }
+
+    String token =
+            jwtService.generateToken(user.getEmail());
+
+    return new AuthResponse(
+            token,
+            user.getId(),
+            user.getName(),
+            user.getEmail(),
+            user.getRole()
+    );
+}
 }

@@ -22,7 +22,16 @@ useEffect(() => {
         r.data?.stories ||
         r.data;
 
-      setMine(Array.isArray(stories) ? stories : []);
+      const currentUser = JSON.parse(
+  localStorage.getItem("wa_user") || "{}"
+);
+
+const mineStories = (Array.isArray(stories) ? stories : [])
+  .filter(
+    (s) => s.authorName === currentUser.name
+  );
+
+setMine(mineStories);
     })
     .catch(() => {
       setMine([]);

@@ -1,11 +1,14 @@
 package com.sanjana.writersattic.controller;
 
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.sanjana.writersattic.dto.AuthResponse;
 import com.sanjana.writersattic.dto.LoginRequest;
 import com.sanjana.writersattic.dto.RegisterRequest;
 import com.sanjana.writersattic.service.AuthService;
-
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,18 +21,14 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public AuthResponse register(@RequestBody RegisterRequest request) {
-
-        String message = authService.register(request);
-
-        return new AuthResponse(message);
+    public String register(@RequestBody RegisterRequest request) {
+        return authService.register(request);
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody LoginRequest request) {
+public AuthResponse login(
+        @RequestBody LoginRequest request) {
 
-        String token = authService.login(request);
-
-        return new AuthResponse(token);
-    }
+    return authService.login(request);
+}
 }

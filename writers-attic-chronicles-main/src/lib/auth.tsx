@@ -35,14 +35,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
   };
 
-  const login = async (email: string, password: string) => {
-    const { data } = await api.post("/auth/login", { email, password });
-    const t = data.token ?? data.accessToken ?? data.jwt;
-    const u: User = data.user ?? { id: data.id ?? "", name: data.name ?? email, email, role: data.role };
-    if (!t) throw new Error("No token returned");
-    persist(t, u);
+  const login = async (
+  email: string,
+  password: string
+) => {
+
+  const { data } = await api.post(
+    "/auth/login",
+    {
+      email,
+      password,
+    }
+  );
+
+  const user: User = {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    role: data.role,
   };
 
+  persist(data.token, user);
+};
   const signup = async (name: string, email: string, password: string) => {
     const { data } = await api.post("/auth/register", { name, email, password });
     const t = data.token ?? data.accessToken ?? data.jwt;

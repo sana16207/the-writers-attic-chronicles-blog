@@ -3,7 +3,7 @@ package com.sanjana.writersattic.model;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,7 +50,9 @@ public class Story {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @JsonIgnore
     @Builder.Default
+    
     private List<Comment> comments = new ArrayList<>();
 
     // LIKES (IMPORTANT FIX)
@@ -60,6 +62,7 @@ public class Story {
             orphanRemoval = true
     )
     @Builder.Default
+    @JsonIgnore
     private List<Like> likes = new ArrayList<>();
 
     @ManyToOne

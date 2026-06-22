@@ -36,7 +36,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain)
             throws ServletException, IOException {
-
+        System.out.println("PATH = " + request.getRequestURI());
+System.out.println("AUTH HEADER = " + request.getHeader("Authorization"));
         String authHeader =
                 request.getHeader("Authorization");
 
@@ -48,11 +49,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-
+        System.out.println("TOKEN = " + token);
         String email;
 
         try {
             email = jwtService.extractEmail(token);
+            System.out.println("EMAIL = " + email);
         } catch (Exception e) {
             filterChain.doFilter(request, response);
             return;
@@ -68,7 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             .loadUserByUsername(email);
 
             if (jwtService.isTokenValid(token)) {
-
+            System.out.println("TOKEN VALID");
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
@@ -82,9 +84,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder
                         .getContext()
                         .setAuthentication(authToken);
+                        System.out.println("AUTH SUCCESS");
             }
         }
 
         filterChain.doFilter(request, response);
     }
+    
 }

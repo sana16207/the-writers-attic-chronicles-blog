@@ -14,7 +14,6 @@ export const Route = createFileRoute("/bookmarks")({
   ),
 });
 
-// 👇 IMPORTANT TYPE FIX
 type BookmarkItem = {
   id: number | string;
   story?: Story;
@@ -22,15 +21,23 @@ type BookmarkItem = {
 
 function Bookmarks() {
   const [saved, setSaved] = useState<BookmarkItem[]>([]);
-
+ console.log("SAVED =", saved);
   useEffect(() => {
     api
       .get("/bookmarks")
       .then((r) => {
-        const data = r.data?.data || r.data || [];
-        setSaved(Array.isArray(data) ? data : []);
-      })
-      .catch(() => setSaved([]));
+  console.log("FULL RESPONSE", r.data);
+
+  const data = r.data?.data || r.data || [];
+
+  console.log("DATA", data);
+
+  setSaved(Array.isArray(data) ? data : []);
+})
+      .catch((err) => {
+        console.error("BOOKMARK ERROR:", err);
+        setSaved([]);
+      });
   }, []);
 
   return (
@@ -51,13 +58,17 @@ function Bookmarks() {
             </p>
           )}
 
-          {saved.map((s, i) => (
-            <StoryCard
-              key={s.id}
-              story={s.story ?? (s as any)}
-              index={i}
-            />
-          ))}
+          {saved.map((s, i) => {
+  console.log("ITEM =", s);
+
+  return (
+    <StoryCard
+      key={s.id}
+      story={s.story as Story}
+      index={i}
+    />
+  );
+})}
         </div>
       </div>
     </PageShell>

@@ -40,13 +40,12 @@ export function StoryCard({
 }) {
 
 const [liked, setLiked] = useState(false);
-const [bookmarked, setBookmarked] = useState(false);
 const [likes, setLikes] = useState(0);
-
+const [bookmarked, setBookmarked] = useState(false);
 useEffect(() => {
   setLiked(Boolean(story?.liked));
-  setBookmarked(Boolean(story?.bookmarked));
   setLikes(Number(story?.likes ?? 0));
+  setBookmarked(Boolean((story as any)?.bookmarked));
 }, [story]);
 console.log("StoryCard:", story.id, story.likes, story.liked);
   return (
@@ -123,9 +122,8 @@ console.log("StoryCard:", story.id, story.likes, story.liked);
               />
               <span className="font-type text-[11px]">{likes}</span>
             </button>
-
-            <button
-              onClick={async (e) => {
+<button
+  onClick={async (e) => {
   e.preventDefault();
 
   try {
@@ -135,20 +133,22 @@ console.log("StoryCard:", story.id, story.likes, story.liked);
     } else {
       await api.delete(`/stories/${story.id}/bookmark`);
       setBookmarked(false);
+       window.location.reload();
     }
   } catch (err) {
     console.error(err);
   }
 }}
-              className="rounded-sm p-2 text-coffee/70 transition-colors hover:bg-paper/40 hover:text-gold-deep"
-              aria-label="Bookmark"
-            >
-              <Bookmark
-                className={`h-4 w-4 ${
-                  bookmarked ? "fill-gold text-gold-deep" : ""
-                }`}
-              />
-            </button>
+  className="rounded-sm p-2 text-coffee/70 transition-colors hover:bg-paper/40 hover:text-gold-deep"
+  aria-label="Bookmark"
+>
+  <Bookmark
+    className={`h-4 w-4 ${
+      bookmarked ? "fill-gold text-gold-deep" : ""
+    }`}
+  />
+</button>
+            
           </div>
         </div>
       </div>

@@ -36,4 +36,5 @@ public class BookmarkController {
     public List<Bookmark> getMyBookmarks() {
         return bookmarkService.getMyBookmarks();
     }
+    
 }

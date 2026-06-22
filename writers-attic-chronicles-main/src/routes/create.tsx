@@ -26,6 +26,7 @@ function CreatePage() {
       const response = await api.post("/stories", {
   title,
   content,
+  status: "PUBLISHED",
 });
 
 toast.success("Published.");
@@ -41,6 +42,8 @@ navigate({
   },
 });
     } catch (err: any) {
+      console.log("FULL ERROR", err);
+  console.log("ERROR DATA", err?.response?.data);
       toast.error(err?.response?.data?.message ?? "Could not publish. Try again.");
     } finally {
       setBusy(false);

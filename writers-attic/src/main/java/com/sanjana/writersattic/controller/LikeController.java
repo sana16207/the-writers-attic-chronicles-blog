@@ -6,7 +6,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import java.util.List;
+import com.sanjana.writersattic.model.Like;
 import com.sanjana.writersattic.service.LikeService;
 
 @RestController
@@ -37,4 +38,14 @@ public class LikeController {
 public String test() {
     return "Like Controller Working";
 }
+
+@GetMapping("/my-likes")
+public List<Like> getMyLikes() {
+    return likeService.getMyLikes();
+}
+  @GetMapping("/likes")
+    public List<Like> getLikes() {
+        return likeService.getMyLikes();
+    }
+
 }

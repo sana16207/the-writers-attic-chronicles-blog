@@ -1,7 +1,8 @@
 package com.sanjana.writersattic.service;
 
 import org.springframework.stereotype.Service;
-
+import java.util.List;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.sanjana.writersattic.model.Like;
 import com.sanjana.writersattic.model.Story;
 import com.sanjana.writersattic.model.User;
@@ -31,7 +32,13 @@ public class LikeService {
         Story story = storyRepository.findById(storyId)
                 .orElseThrow(() -> new RuntimeException("Story not found"));
 
-        User user = userRepository.findAll().get(0);
+        String email = SecurityContextHolder
+        .getContext()
+        .getAuthentication()
+        .getName();
+
+User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (likeRepository.existsByStoryAndUser(story, user)) {
             return "Already liked";
@@ -52,7 +59,13 @@ public class LikeService {
         Story story = storyRepository.findById(storyId)
                 .orElseThrow(() -> new RuntimeException("Story not found"));
 
-        User user = userRepository.findAll().get(0);
+        String email = SecurityContextHolder
+        .getContext()
+        .getAuthentication()
+        .getName();
+
+User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("User not found"));
 
         likeRepository.deleteByStoryAndUser(story, user);
 
@@ -66,4 +79,16 @@ public class LikeService {
 
         return likeRepository.countByStory(story);
     }
+    public List<Like> getMyLikes() {
+
+    String email = SecurityContextHolder
+            .getContext()
+            .getAuthentication()
+            .getName();
+
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    return likeRepository.findByUser(user);
+}
 }

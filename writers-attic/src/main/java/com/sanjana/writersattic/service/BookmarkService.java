@@ -2,8 +2,8 @@ package com.sanjana.writersattic.service;
 
 import java.util.List;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
 import com.sanjana.writersattic.model.Bookmark;
 import com.sanjana.writersattic.model.Story;
 import com.sanjana.writersattic.model.User;
@@ -28,41 +28,59 @@ public class BookmarkService {
 
     public String bookmarkStory(Long storyId) {
 
-        Story story = storyRepository.findById(storyId)
-                .orElseThrow(() -> new RuntimeException("Story not found"));
+    Story story = storyRepository.findById(storyId)
+            .orElseThrow(() -> new RuntimeException("Story not found"));
 
-        User user = userRepository.findAll().get(0);
+    String email = SecurityContextHolder
+            .getContext()
+            .getAuthentication()
+            .getName();
 
-        if (bookmarkRepository.existsByStoryAndUser(story, user)) {
-            return "Already bookmarked";
-        }
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Bookmark bookmark = Bookmark.builder()
-                .story(story)
-                .user(user)
-                .build();
-
-        bookmarkRepository.save(bookmark);
-
-        return "Story bookmarked";
+    if (bookmarkRepository.existsByStoryAndUser(story, user)) {
+        return "Already bookmarked";
     }
+
+    Bookmark bookmark = Bookmark.builder()
+            .story(story)
+            .user(user)
+            .build();
+
+    bookmarkRepository.save(bookmark);
+
+    return "Story bookmarked";
+}
 
     public String removeBookmark(Long storyId) {
 
-        Story story = storyRepository.findById(storyId)
-                .orElseThrow(() -> new RuntimeException("Story not found"));
+    Story story = storyRepository.findById(storyId)
+            .orElseThrow(() -> new RuntimeException("Story not found"));
 
-        User user = userRepository.findAll().get(0);
+    String email = SecurityContextHolder
+            .getContext()
+            .getAuthentication()
+            .getName();
 
-        bookmarkRepository.deleteByStoryAndUser(story, user);
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return "Bookmark removed";
-    }
+    bookmarkRepository.deleteByStoryAndUser(story, user);
+
+    return "Bookmark removed";
+}
 
     public List<Bookmark> getMyBookmarks() {
 
-        User user = userRepository.findAll().get(0);
+    String email = SecurityContextHolder
+            .getContext()
+            .getAuthentication()
+            .getName();
 
-        return bookmarkRepository.findByUser(user);
-    }
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    return bookmarkRepository.findByUser(user);
+}
 }

@@ -36,41 +36,48 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain)
             throws ServletException, IOException {
+
         System.out.println("PATH = " + request.getRequestURI());
-System.out.println("AUTH HEADER = " + request.getHeader("Authorization"));
-        String authHeader =
-                request.getHeader("Authorization");
+        System.out.println("AUTH HEADER = " + request.getHeader("Authorization"));
 
-        if (authHeader == null ||
-                !authHeader.startsWith("Bearer ")) {
+        String authHeader = request.getHeader("Authorization");
 
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = authHeader.substring(7);
         System.out.println("TOKEN = " + token);
+
         String email;
 
         try {
+
             email = jwtService.extractEmail(token);
             System.out.println("EMAIL = " + email);
+
         } catch (Exception e) {
+
+            e.printStackTrace();
+            System.out.println("JWT ERROR = " + e.getMessage());
+
             filterChain.doFilter(request, response);
             return;
         }
 
+        System.out.println("EMAIL AFTER EXTRACT = " + email);
+
         if (email != null &&
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication() == null) {
+                SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails =
-                    userDetailsService
-                            .loadUserByUsername(email);
+                    userDetailsService.loadUserByUsername(email);
 
             if (jwtService.isTokenValid(token)) {
-            System.out.println("TOKEN VALID");
+
+                System.out.println("TOKEN VALID");
+
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
@@ -84,11 +91,11 @@ System.out.println("AUTH HEADER = " + request.getHeader("Authorization"));
                 SecurityContextHolder
                         .getContext()
                         .setAuthentication(authToken);
-                        System.out.println("AUTH SUCCESS");
+
+                System.out.println("AUTH SUCCESS");
             }
         }
 
         filterChain.doFilter(request, response);
     }
-    
 }

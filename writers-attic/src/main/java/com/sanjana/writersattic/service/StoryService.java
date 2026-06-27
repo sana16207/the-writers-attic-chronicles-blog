@@ -19,29 +19,32 @@ import com.sanjana.writersattic.model.User;
 import com.sanjana.writersattic.repository.LikeRepository;
 import com.sanjana.writersattic.repository.StoryRepository;
 import com.sanjana.writersattic.repository.UserRepository;
-
+import com.sanjana.writersattic.repository.BookmarkRepository;
 @Service
 public class StoryService {
 
     private final StoryRepository storyRepository;
     private final LikeRepository likeRepository;
     private final UserRepository userRepository;
+    private final BookmarkRepository bookmarkRepository;
 
     public StoryService(
             StoryRepository storyRepository,
             LikeRepository likeRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            BookmarkRepository bookmarkRepository) {
 
         this.storyRepository = storyRepository;
         this.likeRepository = likeRepository;
         this.userRepository = userRepository;
+        this.bookmarkRepository = bookmarkRepository;
     }
 
     // CREATE
     public ApiResponse<StoryResponse> createStory(StoryRequest request) {
-
+        
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
+        System.out.println("EMAIL FROM SECURITY = " + email);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -167,18 +170,24 @@ public class StoryService {
         User currentUser = null;
 
         var auth = SecurityContextHolder.getContext().getAuthentication();
+System.out.println("AUTH = " + auth);
 
+if(auth != null){
+    System.out.println("AUTH NAME = " + auth.getName());
+}
         if (auth != null &&
                 auth.isAuthenticated() &&
                 !"anonymousUser".equals(auth.getName())) {
 
             String email = auth.getName();
             currentUser = userRepository.findByEmail(email).orElse(null);
+        System.out.println("CURRENT USER = " + currentUser);
         }
 
         boolean liked = currentUser != null &&
                 likeRepository.existsByStoryAndUser(story, currentUser);
-
+        boolean bookmarked = currentUser != null &&
+                bookmarkRepository.existsByStoryAndUser(story, currentUser);
         return StoryResponse.builder()
                 .id(story.getId())
                 .title(story.getTitle())
@@ -186,10 +195,13 @@ public class StoryService {
                 .status(story.getStatus())
                 .likes(likes)
                 .liked(liked)
+                .bookmarked(bookmarked)
                 .createdAt(story.getCreatedAt())
                 .updatedAt(story.getUpdatedAt())
                 .authorName(story.getAuthor() != null ? story.getAuthor().getName() : "Anonymous")
                 .authorId(story.getAuthor() != null ? story.getAuthor().getId() : null)
                 .build();
+
+                
     }
 }

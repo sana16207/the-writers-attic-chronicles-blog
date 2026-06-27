@@ -18,7 +18,7 @@ public class StoryResponse {
     private String authorName;
     private Long likes;
     private Boolean liked;
-
+    private Boolean bookmarked;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     

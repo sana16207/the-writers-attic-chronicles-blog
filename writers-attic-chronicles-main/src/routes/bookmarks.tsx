@@ -2,11 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageShell } from "@/components/PageShell";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StoryCard } from "@/components/StoryCard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api, type Story } from "@/lib/api";
 
 export const Route = createFileRoute("/bookmarks")({
-  head: () => ({ meta: [{ title: "Bookmarks — Writers Attic" }] }),
+  head: () => ({
+    meta: [{ title: "Bookmarks — Writers Attic" }],
+  }),
   component: () => (
     <ProtectedRoute>
       <Bookmarks />
@@ -16,29 +18,57 @@ export const Route = createFileRoute("/bookmarks")({
 
 type BookmarkItem = {
   id: number | string;
-  story?: Story;
+  story?: any;
 };
 
 function Bookmarks() {
   const [saved, setSaved] = useState<BookmarkItem[]>([]);
- console.log("SAVED =", saved);
-  useEffect(() => {
+  const [likesData, setLikesData] = useState<any[]>([]);
+
+  const loadBookmarks = () => {
     api
       .get("/bookmarks")
       .then((r) => {
-  console.log("FULL RESPONSE", r.data);
+        const data = r.data?.data || r.data || [];
+        setSaved(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setSaved([]));
 
-  const data = r.data?.data || r.data || [];
+    // FIX 1: also fetch likes so we know which stories the user liked
+    api
+      .get("/likes")
+      .then((r) => setLikesData(r.data?.data || r.data || []))
+      .catch(() => setLikesData([]));
+  };
 
-  console.log("DATA", data);
+  // FIX 2: stable ref so event listener never captures a stale closure
+  const loadBookmarksRef = useRef(loadBookmarks);
+  useEffect(() => {
+    loadBookmarksRef.current = loadBookmarks;
+  });
 
-  setSaved(Array.isArray(data) ? data : []);
-})
-      .catch((err) => {
-        console.error("BOOKMARK ERROR:", err);
-        setSaved([]);
-      });
+  useEffect(() => {
+    loadBookmarksRef.current();
+    const handler = () => loadBookmarksRef.current();
+    window.addEventListener("storyChanged", handler);
+    return () => window.removeEventListener("storyChanged", handler);
   }, []);
+
+  const likedStoryIds = likesData.map((l: any) => l.story?.id).filter(Boolean);
+
+  // FIX 3: correct like endpoint
+  const handleLike = async (id: number | string) => {
+    try {
+      await api.post(`/stories/${id}/like`);
+      loadBookmarks();
+    } catch (err) {
+      console.error("Like failed", err);
+    }
+  };
+
+  const handleBookmark = () => {
+    loadBookmarks();
+  };
 
   return (
     <PageShell>
@@ -58,17 +88,29 @@ function Bookmarks() {
             </p>
           )}
 
-          {saved.map((s, i) => {
-  console.log("ITEM =", s);
+          {saved.map((b, i) => {
+            const s = b.story;
+            if (!s) return null;
 
-  return (
-    <StoryCard
-      key={s.id}
-      story={s.story as Story}
-      index={i}
-    />
-  );
-})}
+            // FIX 4: properly extract authorName and likes from nested story shape
+            const storyProp: Story = {
+              ...s,
+              bookmarked: true,
+              liked: likedStoryIds.includes(s.id),
+              likes: s.likeCount ?? s.likes ?? 0,
+              authorName: s.author?.name ?? s.authorName ?? "Anonymous",
+            };
+
+            return (
+              <StoryCard
+                key={b.id}
+                story={storyProp}
+                index={i}
+                onLike={handleLike}
+                onBookmark={handleBookmark}
+              />
+            );
+          })}
         </div>
       </div>
     </PageShell>

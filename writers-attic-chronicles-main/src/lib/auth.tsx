@@ -56,6 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   persist(data.token, user);
+  console.log("NEW TOKEN", data.token);
+console.log("LOCAL TOKEN", localStorage.getItem("wa_token"));
 };
   const signup = async (name: string, email: string, password: string) => {
     const { data } = await api.post("/auth/register", { name, email, password });
